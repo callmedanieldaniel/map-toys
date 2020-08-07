@@ -1,0 +1,19 @@
+{
+  "name": "map-toys",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/danieltao1993/map-toys.git"
+  },
+  "author": "韬侃",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/danieltao1993/map-toys/issues"
+  },
+  "homepage": "https://github.com/danieltao1993/map-toys#readme"
+}

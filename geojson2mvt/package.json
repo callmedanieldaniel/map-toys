@@ -1,0 +1,17 @@
+{
+  "name": "test geojson2mvt",
+  "version": "1.0.0",
+  "description": "Cuts a file pyramid of static vector tiles (.mvt) from a geojson file",
+  "main": "createTile.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "fs": "^0.0.1-security",
+    "geojson-vt": "^3.2.1",
+    "geojson2mvt": "^0.0.4",
+    "vt-pbf": "^3.1.1"
+  }
+}
