@@ -16,9 +16,10 @@ dist
 
 jspm_packages/
 node_modules/
-**/node_modules/
-./**/node_modules/
-./**/.mvt
-./**/tiles
-./**/dist
-./**/.cache
+**/**/node_modules/
+# **/node_modules/
+**/.mvt
+**/tiles
+**/logs
+**/dist
+**/.cache
