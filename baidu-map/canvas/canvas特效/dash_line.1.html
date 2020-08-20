@@ -1,0 +1,35 @@
+<body>
+
+    <canvas id="myCanvas" style="position:fixed;top:0;left:0;width:100%;overflow:hidden;z-index:-9999;"></canvas>
+
+    <script>
+        var c = document.getElementById("myCanvas");
+
+        var ctx = c.getContext("2d");
+
+        //重新开始一条路径使颜色不互相影响
+
+        ctx.beginPath();
+
+        //设置笔触的颜色
+
+        ctx.strokeStyle = "#0000ff";
+
+        //设置开始坐标
+
+        ctx.moveTo(0, 0);
+
+        //设置结束坐标
+
+        ctx.lineTo(50, 60);
+
+        //设置线条宽度
+
+        ctx.lineTo(200, 0);
+
+        ctx.lineWidth = 10;
+
+        ctx.lineJoin = "miter";
+    </script>
+
+</body>

@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+
+<head lang="en">
+    <meta charset="UTF-8">
+    <title></title>
+    <style>
+        body{
+            margin: 0;
+            padding: 0;
+        }
+    </style>
+</head>
+
+<body>
+    <canvas id="cvs" width="800" height="800"></canvas>
+    <div></div>
+
+    <script id="vertex" type="text/v-shader">
+        precision highp float;
+  attribute vec3 position;
+  uniform mat4 mat;
+  varying vec4 color;
+  void main(){
+    gl_Position=mat*vec4(position,1.0);
+    color=vec4(gl_Position.x,gl_Position.y,gl_Position.z,0.8);
+  }
+</script>
+    <script id="fragment" type="text/f-shader">
+        #ifdef GL_ES
+        precision mediump float;
+    #endif
+        varying vec4 color;
+        void main(){
+            gl_FragColor=color;
+        }
+</script>
+
+    <script type="text/javascript">
+        function makeSphereVertices() {
+            float altitude;
+            float altitudeDelta;
+            float azimuth;
+            float ex;
+            float ey;
+            float ez;
+            for (int i = 0; i <= divide; i++) {
+                altitude = (float)(Math.PI / 2.0 - i * (Math.PI) / divide);
+                altitudeDelta = (float)(Math.PI / 2.0 - (i + 1) * (Math.PI) / divide);
+                float[] vertices = new float[divide * 6 + 6];
+                //创建纹理坐标点数组
+                float[] texCoords = new float[divide * 4 + 4];
+                for (int j = 0; j <= divide; j++) {
+                    azimuth = (float)(j * (Math.PI * 2) / divide);
+                    ex = (float)(Math.cos(altitude) * Math.cos(azimuth));
+                    ey = (float) Math.sin(altitude);
+                    ez = (float) - (Math.cos(altitude) * Math.sin(azimuth));
+                    vertices[6 * j + 0] = radius * ex;
+                    vertices[6 * j + 1] = radius * ey;
+                    vertices[6 * j + 2] = radius * ez;
+                    //计算azimuth经度下纬度为altitude的纹理点坐标
+
+                    texCoords[4 * j + 0] = j / (float) divide;
+                    texCoords[4 * j + 1] = i / (float) divide;
+                    ex = (float)(Math.cos(altitudeDelta) * Math.cos(azimuth));
+                    ey = (float) Math.sin(altitudeDelta);
+                    ez = (float) - (Math.cos(altitudeDelta) * Math.sin(azimuth));
+                    vertices[6 * j + 3] = radius * ex;
+                    vertices[6 * j + 4] = radius * ey;
+                    vertices[6 * j + 5] = radius * ez;
+                    //计算azimuth经度下纬度为altitudeDelta的纹理点坐标
+                    
+                    texCoords[4 * j + 2] = j / (float) divide;
+                    texCoords[4 * j + 3] = (i + 1) / (float) divide;
+                }
+                mVertices.add(makeFloatBufferFromArray(vertices));
+                //将纹理点坐标转换成FloatBuffer类型添加到纹理点坐标集合ArrayList<FloatBuffer>里
+                mTextureCoords.add(makeFloatBufferFromArray(texCoords));
+            }
+        }
+    </script>
+</body>
+
+</html>

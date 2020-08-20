@@ -1,0 +1,95 @@
+{
+  "status": 0,
+  "message": null,
+  "data": {
+    "detail": {
+      "id": "1",
+      "title": "u6d4bu8bd5u66f4u65b03",
+      "description": "u63cfu8ff0u66f4u65b0",
+      "cityCode": "131",
+      "createTime": "1500362027",
+      "updateTime": "1501643550",
+      "releaseTime": "1501643549",
+      "userId": "344763722",
+      "parentId": "0",
+      "point": "116.401394,39.915599",
+      "versionNumber": "12",
+      "releaseId": "23",
+      "releaseTag": "",
+      "status": "2",
+      "configData": {
+        "global": {
+          "width": 240,
+          "height": 144,
+          "boundingBox": [
+            [
+              114.277905,
+              30.540777
+            ],
+            [
+              114.377365,
+              30.605948
+            ]
+          ],
+          "backgroundColor": "#000"
+        },
+        "components": [
+          {
+            "type": "Road",
+            "label": "wh-u53cbu8c0au5927u9053-u957fu6c5fu96a7u9053",
+            "renderOptions": {
+              "lineWidth": 4
+            },
+            "path": {
+              "start": [
+                114.323907,
+                30.560975
+              ],
+              "end": [
+                114.301441,
+                30.593629
+              ],
+              "steps": []
+            }
+          },
+          {
+            "type": "Road",
+            "label": "wh-u53cbu8c0au5927u9053~u6c99u6e56u5927u6865",
+            "renderOptions": {
+              "lineWidth": 4
+            },
+            "path": {
+              "start": [
+                114.323907,
+                30.560975
+              ],
+              "end": [
+                114.341954,
+                30.567027
+              ],
+              "steps": []
+            }
+          },
+          {
+            "type": "Road",
+            "label": "u53cbu8c0au5927u9053~u5f90u4e1c",
+            "renderOptions": {
+              "lineWidth": 4
+            },
+            "path": {
+              "start": [
+                114.323907,
+                30.560975
+              ],
+              "end": [
+                114.349946,
+                30.595999
+              ],
+              "steps": []
+            }
+          }
+        ]
+      }
+    }
+  }
+}

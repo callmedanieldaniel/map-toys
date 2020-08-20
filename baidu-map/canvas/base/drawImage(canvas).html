@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>菜鸟教程(runoob.com)</title>
+    <style>
+        canvas {
+            border: 1px solid black;
+        }
+    </style>
+</head>
+
+<body>
+    <script>
+        function myFunction() {
+            var x = document.createElement("CANVAS");
+            var ctx = x.getContext("2d");
+            var myImage = new Image(); // Create a new blank image.
+            myImage.crossOrigin = "";
+            myImage.src = "./left&back.png";
+            myImage.onload = function () {
+                ctx.drawImage(myImage, 0, 0, 100, 100)
+                var e = document.createElement("CANVAS");
+                var _c = e.getContext("2d");
+                _c.drawImage(x, 0, 0, 100, 100)
+                document.body.appendChild(e);
+            }
+            // document.body.appendChild(x);
+        }
+        myFunction();
+    </script>
+
+</body>
+
+</html>

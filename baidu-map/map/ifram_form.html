@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+<!--<form id="preview-form" target="iframe" method="post">-->
+    <!--<input type="hidden" name="alwaysImage" value="1" />-->
+    <!--<input type="hidden" name="configData" value="{}" />-->
+<!--</form>-->
+<!--<div id="map-point"></div>-->
+<!--<iframe id="iframe" name="iframe" width="400px" height="200px;"></iframe>-->
+
+<iframe name="previewIframe" style="display:block;"></iframe>
+<form id="previewForm" target="previewIframe" method="post" action="http://cp01-jiaotongyun-6.epc.baidu.com:8080/guidingscreen/screen/preview">
+    <input  id="configData" type="text" name="configData"/>
+    <input id="alwaysImage" type="text" name="alwaysImage"/>
+    <!--<input type="submit" value=" 提 交 " />-->
+</form>
+
+<button onclick="submit()"/>
+<script>
+    let configData={"global":{"width":240,"height":144,"boundingBox":[[114.277905,30.540777],[114.377365,30.605948]],"backgroundColor":"#red"},"components":[{"type":"Road","label":"wh-友谊大道-长江隧道","renderOptions":{"lineWidth":4},"path":{"start":[114.323907,30.560975],"end":[114.301441,30.593629],"steps":[]}},{"type":"Road","label":"wh-友谊大道~沙湖大桥","renderOptions":{"lineWidth":4},"path":{"start":[114.323907,30.560975],"end":[114.341954,30.567027],"steps":[]}},{"type":"Road","label":"友谊大道~徐东","renderOptions":{"lineWidth":4},"path":{"start":[114.323907,30.560975],"end":[114.349946,30.595999],"steps":[]}}]}
+    let alwaysImage=1
+
+    function submit() {
+        document.getElementById("configData").value=JSON.stringify(configData)
+        document.getElementById("alwaysImage").value=JSON.stringify(alwaysImage)
+        document.getElementById("previewForm").submit()
+    }
+</script>
+</body>
+</html>

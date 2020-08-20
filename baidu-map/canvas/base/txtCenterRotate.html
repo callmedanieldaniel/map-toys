@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Demo</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+
+</head>
+
+<body>
+    <canvas id="canvas" width="800px" height="800">
+    </canvas>
+
+    <script type="text/javascript">
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        let cWidth = 800;
+        let cHeight = 800;
+        // Point of transform origin
+        ctx.arc(400, 400, 5, 0, 2 * Math.PI);
+        ctx.fillStyle = 'blue';
+        ctx.fill();
+        let colors = ['red', 'black', 'green', 'yellow'];
+        for (let i in colors) {
+            // Rotated rectangle
+            ctx.translate(cWidth / 2, cHeight / 2);
+            ctx.rotate(90 / 180 * Math.PI);
+            ctx.translate(-cWidth / 2, -cHeight / 2);
+            ctx.fillStyle = colors[i];
+            console.log('.', colors[i])
+            ctx.fillRect(100, 100, 80, 20);
+
+            drawRotateText(ctx, Math.random() * cWidth, Math.random() * cHeight, Math.random() * Math.PI * 2);
+        }
+
+        function drawRotateText(ctx, x, y, angle) {
+            ctx.save()
+            ctx.fillStyle = '#ccc';
+            ctx.moveTo(x, y);
+            ctx.arc(x, y, 10, 0, 2 * Math.PI);
+            ctx.fill();
+            ctx.stroke();
+            ctx.fillStyle = 'red';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = "middle";
+            ctx.font = '25px sans-serif';
+            ctx.translate(x, y);
+            ctx.rotate(angle);
+            ctx.translate(-x, -y);
+            ctx.fillText('DANIEL', x, y);
+            ctx.restore();
+        }
+
+        // Reset transformation matrix to the identity matrix
+        // ctx.setTransform(1, 0, 0, 1, 0, 0)
+    </script>
+</body>
+
+</html>

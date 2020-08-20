@@ -1,0 +1,85 @@
+<body onload="init()">
+
+    <canvas id="myCanvas" style="position:fixed;top:0;left:0;width:100%;overflow:hidden;z-index:-9999;"></canvas>
+
+    <script>
+        var c = document.getElementById("myCanvas");
+
+        var ctx = c.getContext("2d");
+
+        var xp = 4; //最小长度
+
+        var yp = 2; //最小长度
+
+        var beginx = 0; //开始横坐标
+
+        var beginy = 0; //开始纵坐标
+
+        var beginz = 4; //开始第一个点横坐标
+
+        var beginw = 2; //开始第一个点纵坐标
+
+        var times = 0;
+
+        drows(beginx, beginy, beginz, beginw);
+
+        function drows(x, y, z, w) {
+
+            if (x + xp < 200) {
+
+                ctx.lineWidth = 2;
+
+                //重新开始一条路径使颜色不互相影响
+
+                ctx.beginPath();
+
+                //设置笔触的颜色
+
+                ctx.strokeStyle = "#0000ff";
+
+                //设置开始坐标
+
+                ctx.moveTo(x, y);
+
+                //设置中间坐标
+
+                ctx.lineTo(z, w);
+
+                //设置结束坐标
+
+                ctx.stroke();
+
+                x = x + xp;
+
+                y = y + yp;
+
+                z = z + xp;
+
+                w = w + yp;
+
+                times++;
+
+                if (times % 2 == 0) {
+
+                } else {
+
+                    x = x + xp;
+
+                    y = y + yp;
+
+                    z = z + xp;
+
+                    w = w + yp;
+
+                    times++;
+
+                }
+
+                drows(x, y, z, w);
+
+            }
+
+        }
+    </script>
+
+</body>

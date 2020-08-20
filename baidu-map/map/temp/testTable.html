@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+<div id="tableli"></div>
+
+<script>
+    var screenList = [
+        {
+            "id": "22",
+            "title": "\u6d4b\u8bd5",
+            "description": "\u63cf\u8ff0",
+            "cityCode": "131",
+            "createTime": "1501643549",
+            "updateTime": "1501643549",
+            "releaseTime": "0",
+            "userId": "344763722",
+            "status": "1",
+            "parentId": "0",
+            "point": "116.401394,39.915599",
+            "versionNumber": "1",
+            "releaseId": "0",
+            "releaseTag": ""
+        },
+        {
+            "id": "19",
+            "title": "test",
+            "description": "no",
+            "cityCode": "131",
+            "createTime": "1501576656",
+            "updateTime": "1501576656",
+            "releaseTime": "0",
+            "userId": "344763722",
+            "status": "1",
+            "parentId": "0",
+            "point": "116.401394,39.915599",
+            "versionNumber": "1",
+            "releaseId": "0",
+            "releaseTag": ""
+        }]
+
+    let frag = document.createDocumentFragment()
+    frag.appendChild( createScreenLi({id:"id",title:"title",cityCode:'cityCode',updateTime:"updateTime"}))
+
+    screenList.forEach((screen) => {
+        let retLi = createScreenLi(screen)
+        frag.appendChild(retLi)
+    });
+
+    console.log(frag.outerHTML)
+    var tar = document.getElementById("tableli")
+    tar.appendChild(frag)
+
+    function createScreenLi(screen){
+        let li = document.createElement("li")
+        li.className = "screen_index"
+        let idSpan = document.createElement("span")
+        let cityCodeSpan = document.createElement("span")
+        let updateTimeSpan = document.createElement("span")
+        idSpan.textContent=screen.id
+        cityCodeSpan.textContent=screen.cityCode
+
+        li.appendChild(idSpan)
+        li.appendChild(cityCodeSpan);
+        (function (screen,el ) {
+            li.onclick= function () { console.log(screen)
+//                li.remove()
+            };
+        })(screen.cityCode,li);
+        return li
+    }
+
+</script>
+<style>
+
+    .screen_index{
+        width:350px;
+        margin: 10px;
+        background-color: lightblue;
+        display: flex;
+    }
+
+
+    .screen_index > span{
+        margin: 1px 5px;
+        /*border: solid blue 2px;*/
+        /*font-size: 20px;*/
+        width: 70px;
+        align-items: flex-start;
+    }
+
+</style>
+
+</body>
+</html>

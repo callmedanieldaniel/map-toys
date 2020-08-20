@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+    <meta charset="UTF-8">
+    <title>元素</title>
+    <script type="text/javascript" src="./elements.js"></script>
+    <script type="text/javascript" src="./draw.js"></script>
+
+</head>
+
+<body>
+    <div id="canvas-warp">
+        <canvas id="canvas" style="border: 1px solid #aaaaaa; display: block; margin: 50px auto;">
+            你的浏览器居然不支持Canvas？！赶快换一个吧！！
+        </canvas>
+    </div>
+    <script>
+        let n = 0;
+        let canvasWidth = 800;
+        let canvasHeight = 800;
+        let context = init("canvas", canvasWidth, canvasHeight)
+        let roadColor = '#333'
+        let imagePair = {};
+        let keys = {
+            0: 'turnLeft',
+            1: 'straight',
+            2: 'turnRight',
+        }
+        let ps = Object.keys(keys).map(k => {
+            let loc = `./${keys[k]}.png`;
+            return getImage(loc);
+        })
+
+        Promise.all(ps).then(values => {
+            values.map((img, index) => {
+                imagePair[keys[index]] = img;
+            })
+            drawDirs(canvasWidth, canvasHeight, 5, {
+                width: 150,
+                height: 200,
+                bgColor: '#333',
+                images: imagePair,
+            });
+        })
+
+        function getImage(url) {
+            return new Promise((resolve, reject) => {
+                let image = new Image(); // Create a new blank image.
+                image.crossOrigin = "";
+                image.src = url;
+                if (image.complete) {
+                    resolve(image);
+                } else {
+                    image.onload = function () {
+                        resolve(image);
+                    }
+                }
+            })
+        }
+    </script>
+</body>
+
+</html>

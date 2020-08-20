@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>BMapGL</title>
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no">
+    <style type="text/css">
+        html,
+        body {
+            width: 100%;
+            height: 100%;
+            padding: 0;
+            margin: 0;
+        }
+
+        #map_container {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+        }
+    </style>
+    <script src="https://unpkg.com/three"></script>
+    <script src="./Stats.js"></script>
+    <script src="https://threejs.org/examples/js/controls/OrbitControls.js"></script>
+</head>
+
+<body>
+    <script>
+        var stats = new Stats();
+        stats.setMode(0); // 0: fps, 1: ms
+        // 将stats的界面对应左上角
+        stats.domElement.style.position = 'absolute';
+        stats.domElement.style.left = '0px';
+        stats.domElement.style.top = '0px';
+        document.body.appendChild(stats.domElement);
+
+        // 获取浏览器窗口的宽高，后续会用
+        let width = window.innerWidth
+        let height = window.innerHeight
+
+        let renderer = new THREE.WebGLRenderer({
+            antialias: true
+        })
+        // 设置渲染器的清除颜色（即绘制下一帧前填充的颜色）和输出的 canvas 的尺寸
+        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.setClearColor(0x000000)
+        renderer.setSize(width, height)
+
+        // 将渲染器的输出（此处是 canvas 元素）插入到 body
+        let scene = new THREE.Scene()
+
+        // 创建一个具有透视效果的摄像机
+        let camera = new THREE.PerspectiveCamera(45, width / height, 1, 10000);
+        camera.position.z = 1000;
+        // 设置摄像机位置，并将其朝向场景中心
+        // camera.position.x = 0
+        // camera.position.y = 10
+        // camera.position.z = 200
+        camera.lookAt(scene.position)
+        document.body.appendChild(renderer.domElement)
+
+        // 初始化摄像机插件（用于拖拽旋转摄像机，产生交互效果）
+        let orbitControls = new THREE.OrbitControls(camera)
+        orbitControls.autoRotate = true
+
+        function getVerticesAndColors(amplify = Math.random() * 5) {
+            let vertices = [];
+            let colors = [];
+            let ps = [];
+
+            for (let x = 0; x < 10; x++) {
+                for (let z = 0; z < 10; z++) {
+                    for (let y = 0; y < 10; y++) {
+                        let xr = Math.random();
+                        let yr = Math.random();
+                        let zr = Math.random();
+                        ps.push({
+                            x: x * amplify * 20 * xr,
+                            y: y * amplify * 20 * yr,
+                            z: z * amplify * 20 * zr
+                        })
+                    }
+                }
+            }
+
+            let color = new THREE.Color();
+            ps.map(p => {
+                vertices.push(p.x, p.y, p.z);
+                let rans = [
+                    Math.random(p.x),
+                    Math.random(p.y),
+                    Math.random(p.z),
+                ]
+                // color.setHSL(0.6, 1.0, Math.max(0, -p.x / 200) + 0.5);
+                color.setHSL(rans[0], rans[1], rans[2]);
+                colors.push(color.r, color.g, color.b);
+            })
+            return {
+                colors,
+                vertices,
+                points: ps,
+            }
+        }
+        let {
+            vertices,
+            colors,
+            points
+        } = getVerticesAndColors(Math.random() * 5);
+
+        let geometry1 = new THREE.BufferGeometry();
+        geometry1.addAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+        geometry1.addAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+
+        let material = new THREE.LineBasicMaterial({
+            // color: 0xffffff,
+            vertexColors: THREE.VertexColors,
+            linewidth: 1,
+            linecap: 'round', //ignored by WebGLRenderer
+            linejoin: 'round' //ignored by WebGLRenderer
+        });
+
+        let scale = 1;
+        let d = 225;
+
+        let parameters = [
+            [material, scale * 1.5, [-d, -d / 2, 0], geometry1],
+        ];
+
+        let dynamicLines = [];
+        for (let i = 0; i < parameters.length; i++) {
+            let p = parameters[i];
+            let line = new THREE.Line(p[3], p[0]);
+            line.scale.x = line.scale.y = line.scale.z = p[1];
+            line.position.x = p[2][0];
+            line.position.y = p[2][1];
+            line.position.z = p[2][2];
+            scene.add(line);
+            dynamicLines.push(line);
+        }
+
+
+
+        var mouseX, mouseY;
+        let windowHalfX = window.innerWidth / 2;
+        let windowHalfY = window.innerHeight / 2;
+        document.addEventListener('mousemove', (e) => {
+            mouseX = e.clientX - windowHalfX;
+            mouseY = e.clientY - windowHalfY;
+        }, false);
+
+        function updateLine(line, MAX_POINTS) {
+            var _positions = line.geometry.attributes.position.array;
+            var _colors = line.geometry.attributes.color.array;
+            let {
+                vertices,
+                colors,
+                points
+            } = getVerticesAndColors(Math.random() * 10);
+            var x = y = z = index = 0;
+            for (var i = 0; i < _positions.length; i++) {
+                _positions[i] = vertices[i];
+                _colors[i] = colors[i];
+                x += (Math.random() - 0.5) * 30;
+                y += (Math.random() - 0.5) * 30;
+                z += (Math.random() - 0.5) * 30;
+            }
+        }
+
+
+        let drawStart = 0;
+        let drawCount = 10;
+        let MAX_POINTS = 100;
+
+        function render() {
+            stats.begin();
+
+            let time = Date.now() * 0.0005;
+            for (let i = 0; i < scene.children.length; i++) {
+                let object = scene.children[i];
+                if (object.isLine && i === 1) {
+                    let line = object;
+                    object.rotation.y = time * (i % 2 ? 1 : -1);
+                }
+            }
+
+            dynamicLines.map(line => {
+                let drawEnd = drawStart + drawCount;
+                line.geometry.setDrawRange(drawStart, drawEnd);
+                if (drawStart > MAX_POINTS || drawEnd > MAX_POINTS) {
+                    drawStart = 0;
+                    updateLine(line, MAX_POINTS);
+                    // line.geometry.dynamic = true;
+                    line.geometry.colorsNeedUpdate = true;
+                    // line.geometry.tangentsNeedUpdate = true;
+                    line.geometry.attributes.position.needsUpdate = true; // required after the first render
+                    line.geometry.computeBoundingSphere();
+                    // line.material.color.setHSL(Math.random(), 1, 0.5);
+                }
+                drawStart++;
+            });
+            camera.lookAt(scene.position)
+            renderer.render(scene, camera);
+            requestAnimationFrame(render)
+            stats.end();
+        }
+        render()
+    </script>
+</body>
+
+</html>

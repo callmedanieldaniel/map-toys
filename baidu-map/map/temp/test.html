@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+<div class="close"></div>
+<!--<div class="src">-->
+    <!--<img-->
+         <!--src="http://cp01-jiaotongyun-6.epc.baidu.com:8080/guidingscreen//screen/preview?configData=%22%22&alwaysImage=1">-->
+<!--</div>-->
+
+</body>
+<style>
+    /*.close {*/
+        /*position: relative;*/
+        /*display: inline-block;*/
+        /*width: 50px;*/
+        /*height: 50px;*/
+        /*overflow: hidden;*/
+    /*}*/
+    /*.close::before, .close::after {*/
+        /*height: 12px;*/
+        /*margin-top: -6px;*/
+    /*}*/
+
+    /*.close::before {*/
+        /*-webkit-transform: rotate(45deg);*/
+        /*-moz-transform: rotate(45deg);*/
+        /*-ms-transform: rotate(45deg);*/
+        /*-o-transform: rotate(45deg);*/
+        /*transform: rotate(45deg);*/
+    /*}*/
+    /*.close::before, .close::after {*/
+        /*content: '';*/
+        /*position: absolute;*/
+        /*height: 2px;*/
+        /*width: 100%;*/
+        /*top: 50%;*/
+        /*left: 0;*/
+        /*margin-top: -1px;*/
+        /*background: #000;*/
+    /*}*/
+
+
+    .src {
+        background-color: #00bb00;
+        width: 500px;
+        height: 500px;
+    }
+    /*关闭图标*/
+
+    .close {
+        position: absolute;
+        right: 25px;
+        top: 25px;
+        width: 50px;
+        height: 50px;
+        background: silver;
+        border-radius: 25px;
+        box-shadow: 2px 2px 5px 0px black;
+        cursor: pointer;
+    }
+
+    .close:hover {
+        background: red;
+    }
+    .close:before {
+        position: absolute;
+        content: '';
+        width: 30px;
+        height: 10px;
+        background: white;
+        transform: rotate(45deg);
+        top: 20px;
+        left: 10px;
+    }
+    .close:after {
+        content: '';
+        position: absolute;
+        width: 30px;
+        height: 10px;
+        background: white;
+        transform: rotate(-45deg);
+        top: 20px;
+        left: 10px;
+    }
+</style>
+<script>
+    console.log(typeof {aa:"hello"} === "object")
+    console.log(typeof "kdkfk" == "string")
+
+    var str="[111,333]";
+    str = str.replace(/^\[(.*)\]$/, "$1")
+    console.log(str);
+
+    let oA = [
+        {0:11,1:12},
+        {0:12,1:22},
+        {0:13,1:32},
+    ]
+    let ar = oA.map((p)=>{
+        p.length = 2
+//        return[...p]
+        return Array.from(p)
+    })
+
+    console.log(ar)
+
+    console.log(typeof Array)
+    console.log(typeof oA == "object")
+
+
+
+</script>
+</html>

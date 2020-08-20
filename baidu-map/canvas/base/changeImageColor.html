@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <script type="text/javascript">
+        //Global variables
+
+
+        // Load the image and display it.
+        function displayImage() {
+            let picWidth = 50; // width of the canvas
+            let picHeight = 50; // height of the canvas
+            let picLength = picWidth * picHeight; // number of chunks
+            let myImage = new Image(); // Create a new blank image.
+            // // Get the canvas element.
+            let vDom = document.createElement("CANVAS");
+            vDom.width= picWidth;
+            vDom.height= picHeight;
+            if (vDom.getContext) {
+                let ctx = vDom.getContext("2d");
+                myImage.crossOrigin = "";
+                myImage.src = "./left&back.png";
+                myImage.onload = function () {
+                    // Load the image into the context.
+                    ctx.drawImage(myImage, 0, 0, 50, 50);
+                    // Get and modify the image data.
+                    myImage = ctx.getImageData(0, 0, 50, 50);
+                    for (var i = 0; i < picLength * 4; i += 4) {
+
+                        // First bytes are red bytes.        
+                        // Remove all red.
+                        myImage.data[i] = 255;
+
+                        // Second bytes are green bytes.
+                        // Third bytes are blue bytes.
+                        // Fourth bytes are alpha bytes
+                    }
+                    ctx.putImageData(myImage, 0, 0);
+
+                    // Put the modified image back on the vDom.
+                    addCanvasToCanvas(vDom)
+                }
+            }
+            document.body.appendChild(vDom);
+        }
+
+        function addCanvasToCanvas(_canvas) {
+            let vDom = document.createElement("CANVAS");
+            let ctx = vDom.getContext("2d");
+            ctx.drawImage(_canvas, 0, 0, 100, 100);
+            document.body.appendChild(vDom);
+        }
+    </script>
+</head>
+
+<body onload="displayImage()">
+    <div>
+        image:
+        <br>
+        <img id="myPhoto" src="./left&back.png" onerror="">
+    </div>
+    <div>
+        canvas:
+        <br>
+
+    </div>
+
+</body>
+
+</html>

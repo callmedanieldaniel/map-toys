@@ -1,0 +1,42 @@
+<!DOCTYPE HTML>
+<html>
+
+<head>
+    <title>Edge detection demo</title>
+
+</head>
+
+<body>
+    <canvas id="canvas"></canvas>
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        canvas.addEventListener('mousemove', function (event) {
+            if (event.region) {
+                alert('ouch, my eye :(');
+            }
+        });
+
+        ctx.beginPath();
+        ctx.arc(100, 100, 75, 0, 2 * Math.PI);
+        ctx.lineWidth = 5;
+        ctx.stroke();
+
+        // Eyes
+        ctx.beginPath();
+        ctx.arc(70, 80, 10, 0, 2 * Math.PI);
+        ctx.arc(130, 80, 10, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.addHitRegion({
+            id: "eyes"
+        });
+
+        // Mouth
+        ctx.beginPath();
+        ctx.arc(100, 110, 50, 0, Math.PI);
+        ctx.stroke();
+    </script>
+</body>
+
+</html>

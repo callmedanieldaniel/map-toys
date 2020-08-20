@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>BMapGL</title>
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no">
+    <style type="text/css">
+        html,
+        body {
+            width: 100%;
+            height: 100%;
+            padding: 0;
+            margin: 0;
+        }
+
+        #map_container {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+        }
+    </style>
+    <script src="https://unpkg.com/three"></script>
+    <script src="https://threejs.org/examples/js/controls/OrbitControls.js"></script>
+    <script type="text/javascript" src="http://huiyan.baidu.com/bmapgl/?libraries=visualization"></script>
+    <script type="text/javascript" src="http://threejs.org/build/three.js"></script>
+    <script type="text/javascript" src="./js/mapStyleDark.js"></script>
+</head>
+
+<body>
+    <div id="map_container"></div>
+
+    <script>
+        /* global BMapGL */
+        var map = new window.BMapGL.Map('map_container');
+
+        map.setTilt(47);
+        var point = new BMapGL.Point(12958166.99, 4825919.72);
+
+        map.centerAndZoom(point, 13);
+
+        map.enableKeyboard();
+        map.enableScrollWheelZoom();
+        map.enableInertialDragging();
+        map.enableContinuousZoom();
+
+        var threeLayer = new BMapGL.visualization.ThreeLayer(map);
+        let xBase = point.lng + 1000;
+        let yBase = point.lat + 1000;
+        let zBase = 2500;
+
+        function init() {
+            // 获取浏览器窗口的宽高，后续会用
+            var width = window.innerWidth
+            var height = window.innerHeight
+            var renderer = threeLayer.getRenderer();
+            var camera = threeLayer.getCamera();
+            var scene = threeLayer.getScene();
+            var world = threeLayer.getWorld();
+            var geometry = new THREE.Geometry()
+            var material = new THREE.PointsMaterial({
+                size: 100,
+                vertexColors: true, // 是否为几何体的每个顶点应用颜色，默认值是为所有面应用材质的颜色
+                color: 0xffffff
+            })
+
+            console.log(xBase, yBase)
+            for (var x = -5; x < 5; x++) {
+                for (var y = -5; y < 5; y++) {
+                    var particle = new THREE.Vector3(xBase + x * 50, yBase + y * 50, 30)
+                    geometry.vertices.push(particle)
+                    geometry.colors.push(new THREE.Color(Math.random() * 0xffffff))
+                }
+            }
+
+            // 相较于 THREE.Sprite，THREE.Points 更适合粒子数量多的情况。
+            var points = new THREE.Points(geometry, material)
+            threeLayer.add(points);
+
+            let carModel = localStorage.getItem('carmodel');
+            let result = JSON.parse(carModel);
+            if(result){
+
+                let loader = new THREE.ObjectLoader();
+                // 场景只有一个 先拿到数据保留到变量去
+                let obj = loader.parse(result);
+                scene.add(obj);
+                renderer.render(scene, camera);
+            }
+        }
+        init()
+    </script>
+</body>
+
+</html>

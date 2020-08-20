@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+<script>
+
+    drawRectBorder() {
+        let self = this
+        let map = this.map
+        let swh = self.state.screenWidthHeight
+        var pixelxy = {
+            xmax: self.startEnd.start.x > self.startEnd.end.x ? self.startEnd.start.x : self.startEnd.end.x,
+            xmin: self.startEnd.start.x < self.startEnd.end.x ? self.startEnd.start.x : self.startEnd.end.x,
+            ymax: self.startEnd.start.y > self.startEnd.end.y ? self.startEnd.start.y : self.startEnd.end.y,
+            ymin: self.startEnd.start.y < self.startEnd.end.y ? self.startEnd.start.y : self.startEnd.end.y,
+        }
+        let scale = swh.height > swh.width ? swh.height / swh.width : swh.width / swh.height
+        let xDif = pixelxy.xmax - pixelxy.xmin
+        let yDif = pixelxy.ymax - pixelxy.ymin
+
+        if (self.startEnd.end.x > self.startEnd.start.x && self.startEnd.end.y > self.startEnd.start.y) {
+            if (xDif < yDif) {
+                pixelxy.xmax = pixelxy.xmin + yDif / scale
+            } else {
+                pixelxy.ymax = pixelxy.ymin + xDif / scale
+                console.log(scale)
+            }
+        }
+        if (self.startEnd.end.x > self.startEnd.start.x && self.startEnd.end.y < self.startEnd.start.y) {
+            if (xDif < yDif) {
+                pixelxy.xmax = pixelxy.xmin + yDif / scale
+            } else {
+                pixelxy.ymin = pixelxy.ymax - xDif / scale
+            }
+        }
+        if (self.startEnd.end.x < self.startEnd.start.x && self.startEnd.end.y > self.startEnd.start.y) {
+            if (xDif < yDif) {
+                pixelxy.xmin = pixelxy.xmax - yDif / scale
+            } else {
+                pixelxy.ymax = pixelxy.ymin + xDif / scale
+            }
+        }
+        if (self.startEnd.end.x < self.startEnd.start.x && self.startEnd.end.y < self.startEnd.start.y) {
+            if (xDif < yDif) {
+                pixelxy.xmin = pixelxy.xmax - yDif / scale
+            } else {
+                pixelxy.ymin = pixelxy.ymax - xDif / scale
+            }
+        }
+
+        let leftBottom = map.pixelToPoint({x:pixelxy.xmin,y:pixelxy.ymin})
+        let leftTop = map.pixelToPoint({x:pixelxy.xmin,y:pixelxy.ymax})
+        let rightTop = map.pixelToPoint({x:pixelxy.xmax,y:pixelxy.ymax})
+        let rightBottom= map.pixelToPoint({x:pixelxy.xmax,y:pixelxy.ymin})
+
+        lbAndtr = {
+            leftBottom:leftBottom,
+            topRight:topRight
+        }
+
+        map.clearOverlays();
+        let points =   [
+            new BMap.Point(leftBottom),
+            new BMap.Point(leftTop),
+            new BMap.Point(rightTop),
+            new BMap.Point(rightBottom)
+        ]
+        console.log("比例：")
+        console.warn((pixelxy.xmax-pixelxy.xmin)/(pixelxy.ymax-pixelxy.ymin))
+        var polygon = new BMap.Polygon(points, { strokeColor: "blue", strokeWeight: 2, strokeOpacity: 1 });  //创建多边形
+        map.addOverlay(polygon);   //增加多边形
+        Action.screenAndMap.changeRegionBoundary(lbAndtr)
+    }
+
+
+</script>
+</body>
+</html>

@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title></title>
+    <script type="text/javascript" src="./1.js"></script>
+    <style type="text/css">
+        canvas {
+            background: #333;
+        }
+
+        strong {
+            color: #f00;
+        }
+    </style>
+</head>
+<body>
+    <h1>Canvas Rotate</h1>
+    <h3>#1 <strong>不居中旋转30deg</strong></h3>
+    <canvas id="cv"></canvas>
+    <h3>#2 <strong>不居中旋转60deg</strong></h3>
+    <canvas id="cv1"></canvas>
+    <h3>#3 <strong>不居中绘制多个, 旋转45deg, 160deg</strong></h3>
+    <canvas id="cv2"></canvas>
+    <h3>#4 <strong>自定义旋转</strong></h3>
+    <p>
+        <span>deg:</span>
+        <input type="range" id="range" max="360" min="0" value="45">
+        <span id="nowDeg">45deg</span>
+    </p>
+    <canvas id="cv3"></canvas>
+    <script type="text/javascript">
+        {
+            function Rotate(id, x, y, width, height, deg) {
+                if (!Rotate.initer) {
+                    Rotate.initer = new Rotate.init();
+                    Rotate.initer.fill(id, x, y, width, height, deg);
+                }
+
+                Rotate.initer.fill(id, x, y, width, height, deg);
+                return Rotate.initer;
+            }
+
+            Rotate.init = function () {
+                this.defaultWidth = 300;
+                this.defaultHeight = 200;
+                this.ctx = null;
+            };
+
+            Rotate.prototype = {
+                constrcutor: Rotate,
+                fill: function (id, x, y, width, height, deg, add) {
+                    !add && this.getCanvas(id);
+                    let ctx = this.getContext();
+
+                    ctx.save();
+                    ctx.beginPath();
+                    ctx.fillStyle = '#fff';
+                    ctx.translate(x + (width / 2), y + (height) / 2);
+                    ctx.rotate(deg * Math.PI / 180);
+                    ctx.translate(-x - (width / 2), -y -(height / 2));
+                    ctx.fillRect(x, y, width, height);
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.restore();
+                },
+                addFill: function (x, y, width, height, deg) {
+                    this.fill(null, x, y, width, height, deg, true);
+                },
+                getCanvas: function (id) {
+                    this.canvas = document.getElementById(id);
+                    this.canvas.width = this.defaultWidth;
+                    this.canvas.height = this.defaultHeight;
+                },
+                getContext: function () {
+                    this.ctx = this.canvas.getContext('2d');
+                    return this.ctx;
+                },
+                clear: function () {
+                    this.ctx.clearRect(0, 0, this.defaultWidth, this.defaultHeight);
+                }
+            };
+
+            Rotate.init.prototype = Rotate.prototype;
+
+
+            Rotate('cv', 50, 50, 50, 50, 30); // 不居中旋转30deg
+            Rotate('cv1', 50, 50, 50, 50, 60); // 不居中旋转60deg
+            Rotate('cv2', 50, 50, 50, 50, 45).addFill(150, 50, 50, 50, 160); // 不居中绘制多个, 旋转45deg, 160deg
+
+            /*
+            * 自定义旋转
+            */
+            let nowDeg = document.getElementById('nowDeg'),
+                cv3 = Rotate('cv3', 50, 50, 50, 50, 45);
+
+            document.getElementById('range').addEventListener('change', function (e) {
+                nowDeg.innerHTML = `${this.value}deg`;
+                cv3.clear();
+                cv3.addFill(50, 50, 50, 50, parseInt(this.value));
+            }, false);
+        }
+    </script>
+</body>
+</html>

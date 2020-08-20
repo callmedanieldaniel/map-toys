@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+
+</body>
+</html>
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no"/>
+    <style type="text/css">
+        body, html, #container {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            margin: 0;
+            font-family: "微软雅黑";
+        }
+    </style>
+    <title>异步加载地图</title>
+</head>
+<body>
+<div id="container"></div>
+</body>
+</html>
+<script type="text/javascript">
+
+    var clickedPoints = []
+    var bmap_points=[]
+    var map_polyline = null
+
+    //百度地图API功能
+    window.onload = loadJScript;  //异步加载地图
+    function loadJScript() {
+        var script = document.createElement("script");
+        script.type = "text/javascript";
+        script.src = "http://api.map.baidu.com/api?v=2.0&ak=wydmYg51LXqtUDpwkBkQj13C0KepuWrx&callback=init";
+
+        document.body.appendChild(script);
+    }
+
+    function getRoute(map) {
+        let startEnd={}
+        map.addEventListener("click", (e)=>{
+            clickedPoints.push(e.point)
+            bmap_points.push(new BMap.Point(e.point.lng,e.point.lat))
+            console.log(e.point)
+            organizeLine(map,bmap_points)
+
+        });
+    }
+
+    function organizeLine(map,bmap_points) {
+        map.clearOverlays()
+        //创建小狐狸
+        bmap_points.forEach((pt)=>{
+            let myIcon = new BMap.Icon("http://lbsyun.baidu.com/jsdemo/img/fox.gif",new BMap.Size(150,70), {imageSize:new BMap.Size(150,70)} );
+            let marker2 = new BMap.Marker(pt,{icon:myIcon});  // 创建标注
+            map.addOverlay(marker2);
+                marker2.enableDragging()
+            marker2.addEventListener('dragging',(e)=>{
+                console.log((e.point))
+                let p = new BMap.Point(e.point.lng,e.point.lat)
+                marker2.setPosition(p)
+            })
+            // 将标注添加到地图中
+            marker2.addEventListener('rightclick',()=>{
+                marker2.remove()
+
+                let ind = bmap_points.findIndex((value, index, arr) =>{
+                    return value === pt;
+                })
+
+                bmap_points.splice(ind ,1)
+                console.log(bmap_points)
+                map_polyline.setPath(bmap_points)
+            })
+
+        })
+
+        map_polyline = new BMap.Polyline(bmap_points,
+            {strokeColor:"blue", strokeWeight:6, strokeOpacity:0.5}
+        );
+        map.addOverlay(map_polyline);
+    }
+
+
+    function init() {
+        var map = new BMap.Map("container");            // 创建Map实例
+        var point = new BMap.Point(116.404, 39.915); // 创建点坐标
+        map.centerAndZoom(point, 15);
+        map.addControl(new BMap.ScaleControl());
+        map.addControl(new BMap.OverviewMapControl());
+        map.setCurrentCity("北京"); // 仅当设置城市信息时，MapTypeControl的切换功能才能可用
+        map.addControl(new BMap.MapTypeControl());
+        map.enableScrollWheelZoom();                 //启用滚轮放大缩小map.addControl(new BMap.NavigationControl());
+        map.addControl(new BMap.CopyrightControl())
+
+        getRoute(map)
+    }
+
+
+
+</script>
