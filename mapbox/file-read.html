@@ -11,6 +11,7 @@
       href="https://api.mapbox.com/mapbox-gl-js/v2.1.1/mapbox-gl.css"
       rel="stylesheet"
     />
+    <script src="https://unpkg.com/deck.gl@^8.0.0/dist.min.js"></script>
     <script src="https://api.mapbox.com/mapbox-gl-js/v2.1.1/mapbox-gl.js"></script>
     <script src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-language/v0.10.1/mapbox-gl-language.js"></script>
     <link
@@ -45,7 +46,7 @@
     <div class="file-reader">
       <div class="form">
         <label class="uploader">
-          <input type="file" id="file" />
+          <input type="file" id="file" multiple="true" />
           <span class="btn" id="chosefile" role="button">选择文件</span>
         </label>
         <div class="actions">
@@ -66,10 +67,12 @@
       const $content = $("content");
       const $readBtn = $("readFile");
       const $infos = $("infos");
-      const $chosefile = $("chosefile");
 
+      setTimeout(() => {
+        document.getElementById("chosefile").click();
+      }, 100);
       window.addEventListener("load", () => {
-        $chosefile.click();
+        document.getElementById("chosefile").click();
       });
 
       const fileReader = new FileReader();
@@ -77,48 +80,48 @@
       // 保存当前文件域引用
       let currentFile = null;
 
-      const readFile = () => {
-        if (!currentFile) {
+      const readFile = async (file, cb) => {
+        if (!file) {
           alert("请选择文件");
           return;
         }
+        let p = new Promise((res, rej) => {});
         fileReader.onloadend = function (evt) {
           // 在文件读取完毕后，其内容将被保存在result属性中
           const content = evt.target.result;
-          // $content.focus();
-          // $content.value = content;
-          text2Json(content);
+
+          text2Json(content, file);
+          cb && cb(file);
         };
         // 以utf-8编码文本格式来读取
-        fileReader.readAsText(currentFile, "utf-8");
+        fileReader.readAsText(file, "utf-8");
       };
 
-      const setInfos = (file) => {
-        const html = `
-          <ul>
-            <li>文件名称：${file.name}</li>
-            <li>文件大小：${file.size} Bytes</li>
-          </ul>
-        `;
-        $infos.innerHTML = html;
-      };
+      let cnt = 0;
 
-      $file.onchange = (evt) => {
-        const file = evt.target.files[0];
-        setInfos(file);
-        currentFile = file;
-        evt.value = null;
-        $readBtn.removeAttribute("disabled");
-        readFile();
+      $file.onchange = async (evt) => {
+        let files = evt.target.files;
+
+        await Array.from(files).reduce(async (promise, file) => {
+          // This line will wait for the last async function to finish.
+          // The first iteration uses an already resolved Promise
+          // so, it will immediately continue.
+          await promise;
+
+          const contents = await new Promise((res, rej) => {
+            readFile(file, () => {
+              res();
+            });
+          });
+        }, Promise.resolve());
       };
 
       // $readBtn.addEventListener("click", () => readFile());
 
-      function text2Json(txt) {
+      function text2Json(txt, file) {
         let points = [];
         let lnglats = [];
         let lines = txt.split("\r\n");
-        let cnt = 0;
         for (let i = 0; i < lines.length; i++) {
           let l = lines[i];
           if (l.startsWith("#INSPVA")) {
@@ -127,49 +130,53 @@
               continue;
             }
             let s = l.split(";")[1];
-            let [
-              week,
-              seccond,
-              lat,
-              lng,
-              height,
-              nv,
-              ev,
-              uv,
-              roll,
-              pitch,
-              azimuth,
-              status,
-              xx,
-              endtag,
-            ] = s.split(",");
+            if (s && s.length) {
+              let [
+                week,
+                secconds,
+                lat,
+                lng,
+                height,
+                NorthVelocity,
+                EastVelocity,
+                UpVelocity,
+                roll,
+                pitch,
+                azimuth,
+                status,
+                xxxx,
+                crlf,
+              ] = s.split(",");
 
-            lat = parseFloat(lat);
-            lng = parseFloat(lng);
-            if (!(Math.abs(lat) < 90 && Math.abs(lng) < 180)) {
-              continue;
+              lat = parseFloat(lat);
+              lng = parseFloat(lng);
+              if (!(Math.abs(lat) < 90 && Math.abs(lng) < 180)) {
+                continue;
+              }
+
+              points.push({
+                filename: file.name,
+                week,
+                secconds,
+                lat: lat,
+                lng: lng,
+                height,
+                NorthVelocity,
+                EastVelocity,
+                UpVelocity,
+                roll,
+                pitch,
+                azimuth,
+                status,
+                xxxx,
+                crlf,
+                index: points.length,
+              });
+              lnglats.push([lng, lat]);
             }
-
-            points.push({
-              week,
-              seccond,
-              lat: lat,
-              lng: lng,
-              height,
-              nv,
-              ev,
-              uv,
-              roll,
-              pitch,
-              azimuth,
-              status,
-              xx,
-              endtag,
-            });
-            lnglats.push([lng, lat]);
           }
         }
-        showPoints(points, lnglats);
+        showPoints(file.name, points, lnglats);
       }
 
       let paths = [
@@ -211,11 +218,12 @@
       var map = (window.map = new mapboxgl.Map({
         container: "map",
         style: "mapbox://styles/mapbox/light-v10",
-        center: [116.418125, 39.908181],
-        zoom: 14,
+        center: [121.418125, 31.23],
+        zoom: 12,
       }));
       var language = new MapboxLanguage();
       map.addControl(language);
+      const layerIdList = [];
 
       var geojson = {
         type: "FeatureCollection",
@@ -258,8 +266,97 @@
           },
         });
       });
-      function showPoints(points, lnglats) {
-        console.log("..", points);
+      function showPoints(filename, points, lnglats) {
+        console.log("points", points);
+        let geojson = {
+          type: "FeatureCollection",
+          // crs: {
+          //   type: "name",
+          //   properties: { name: "urn:ogc:def:crs:OGC:1.3:CRS84" },
+          // },
+          features: points.map((p) => {
+            return {
+              type: "Feature",
+              properties: {
+                ...p,
+              },
+              geometry: {
+                type: "Point",
+                coordinates: [p.lng, p.lat],
+              },
+            };
+          }),
+        };
+
+        let sourceName = filename + "source";
+        let layerid = filename + "layer";
+
+        map.addSource(sourceName, {
+          type: "geojson",
+          // Point to GeoJSON data. This example visualizes all M1.0+ circle-points
+          // from 12/22/15 to 1/21/16 as logged by USGS' Earthquake hazards program.
+          data: geojson,
+          cluster: false,
+          clusterMaxZoom: 8, // Max zoom to cluster points on
+          clusterRadius: 1, // Radius of each cluster when clustering points (defaults to 50)
+        });
+
+        map.addLayer({
+          id: layerid,
+          type: "circle",
+          interactive: true,
+          source: sourceName,
+          paint: {
+            // Use step expressions (https://docs.mapbox.com/mapbox-gl-js/style-spec/#expressions-step)
+            "circle-radius": 3,
+            "circle-color": [
+              "rgb",
+              Math.random() * 255,
+              Math.random() * 255,
+              Math.random() * 255,
+            ],
+            "circle-stroke-color": "white",
+            "circle-stroke-width": 0,
+            "circle-opacity": 0.5,
+          },
+        });
+        layerIdList.push(layerid);
+        enableMouseEvent();
+      }
+
+      function enableMouseEvent() {
+        map.on("click", onClick);
+      }
+      function onClick(e) {
+        // set bbox as 5px reactangle area around clicked point
+        try {
+          var bbox = [
+            [e.point.x - 0, e.point.y - 0],
+            [e.point.x + 0, e.point.y + 0],
+          ];
+          var features = map.queryRenderedFeatures(e.point, {
+            layers: layerIdList,
+          });
+          if (features && features.length) {
+            let f = features[0];
+            console.log("feature", f.properties.index, f.properties, features);
+            let ps = f.properties;
+            if (ps && ps.filename && ps.lng) {
+              const html = `
+              <ul>
+                <li>文件来源名称：${ps.filename}</li>
+              </ul>
+            `;
+              $infos.innerHTML = html;
+              $content.focus();
+              $content.value = JSON.stringify(ps);
+              // showMarker(features.map(f=>f.properties));
+              showMarker([ps]);
+            }
+          }
+        } catch (error) {}
+      }
+      function showLines(points, lnglats) {
         let tracks = [
           {
             name: "track",
@@ -302,21 +399,19 @@
           },
         });
       }
-      map.on("click", function (e) {
-        // set bbox as 5px reactangle area around clicked point
-        var bbox = [
-          [e.point.x - 5, e.point.y - 5],
-          [e.point.x + 5, e.point.y + 5],
-        ];
-        var features = map.queryRenderedFeatures(bbox, {
-          layers: ["line"],
-        });
 
-        // Run through the selected features and set a filter
-        // to match features with unique FIPS codes to activate
-        // the `counties-highlighted` layer.
-        console.log("feature", features);
-      });
+      let markers = [];
+
+      function showMarker(list) {
+        markers &&
+          markers.forEach((m) => {
+            m && m.remove();
+          });
+        markers = list.map((ll) => {
+          let lnglat = [ll.lng, ll.lat];
+          return new mapboxgl.Marker().setLngLat(lnglat).addTo(map);
+        });
+      }
     </script>
   </body>
 </html>
