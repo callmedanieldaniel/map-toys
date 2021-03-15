@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Create a gradient line using an expression</title>
+    <meta
+      name="viewport"
+      content="initial-scale=1,maximum-scale=1,user-scalable=no"
+    />
+    <link
+      href="https://api.mapbox.com/mapbox-gl-js/v2.1.1/mapbox-gl.css"
+      rel="stylesheet"
+    />
+    <script src="https://api.mapbox.com/mapbox-gl-js/v2.1.1/mapbox-gl.js"></script>
+    <script src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-language/v0.10.1/mapbox-gl-language.js"></script>
+    <link
+      rel="stylesheet"
+      href="https://smohan.oss-cn-beijing.aliyuncs.com/static/demos/styles/file-rw-in-browser.css"
+    />
+
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+      }
+      #map {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        width: 100%;
+      }
+      .file-reader {
+        position: fixed;
+        background-color: white;
+        width: 400px;
+        height: 400px;
+        left: 0px;
+        top: 0px;
+        z-index: 10000;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="map"></div>
+    <div class="file-reader">
+      <div class="form">
+        <label class="uploader">
+          <input type="file" id="file" />
+          <span class="btn" id="chosefile" role="button">选择文件</span>
+        </label>
+        <div class="actions">
+          <button class="btn" id="readFile" disabled>读取文件</button>
+        </div>
+      </div>
+      <div class="infos" id="infos">
+        <p style="color: #999">请选择文本类型文件</p>
+      </div>
+      <div class="content">
+        <textarea id="content" placeholder="文件内容..."></textarea>
+      </div>
+    </div>
+
+    <script>
+      const $ = (id) => document.getElementById(id);
+      const $file = $("file");
+      const $content = $("content");
+      const $readBtn = $("readFile");
+      const $infos = $("infos");
+      const $chosefile = $("chosefile");
+
+      window.addEventListener("load", () => {
+        $chosefile.click();
+      });
+
+      const fileReader = new FileReader();
+
+      // 保存当前文件域引用
+      let currentFile = null;
+
+      const readFile = () => {
+        if (!currentFile) {
+          alert("请选择文件");
+          return;
+        }
+        fileReader.onloadend = function (evt) {
+          // 在文件读取完毕后，其内容将被保存在result属性中
+          const content = evt.target.result;
+          // $content.focus();
+          // $content.value = content;
+          text2Json(content);
+        };
+        // 以utf-8编码文本格式来读取
+        fileReader.readAsText(currentFile, "utf-8");
+      };
+
+      const setInfos = (file) => {
+        const html = `
+          <ul>
+            <li>文件名称：${file.name}</li>
+            <li>文件大小：${file.size} Bytes</li>
+          </ul>
+        `;
+        $infos.innerHTML = html;
+      };
+
+      $file.onchange = (evt) => {
+        const file = evt.target.files[0];
+        setInfos(file);
+        currentFile = file;
+        evt.value = null;
+        $readBtn.removeAttribute("disabled");
+        readFile();
+      };
+
+      // $readBtn.addEventListener("click", () => readFile());
+
+      function text2Json(txt) {
+        let points = [];
+        let lnglats = [];
+        let lines = txt.split("\r\n");
+        let cnt = 0;
+        for (let i = 0; i < lines.length; i++) {
+          let l = lines[i];
+          if (l.startsWith("#INSPVA")) {
+            cnt++;
+            if (cnt % 10 !== 0) {
+              continue;
+            }
+            let s = l.split(";")[1];
+            let [
+              week,
+              seccond,
+              lat,
+              lng,
+              height,
+              nv,
+              ev,
+              uv,
+              roll,
+              pitch,
+              azimuth,
+              status,
+              xx,
+              endtag,
+            ] = s.split(",");
+
+            lat = parseFloat(lat);
+            lng = parseFloat(lng);
+            if (!(Math.abs(lat) < 90 && Math.abs(lng) < 180)) {
+              continue;
+            }
+
+            points.push({
+              week,
+              seccond,
+              lat: lat,
+              lng: lng,
+              height,
+              nv,
+              ev,
+              uv,
+              roll,
+              pitch,
+              azimuth,
+              status,
+              xx,
+              endtag,
+            });
+            lnglats.push([lng, lat]);
+          }
+        }
+        showPoints(points, lnglats);
+      }
+
+      let paths = [
+        {
+          name: "测试1",
+          path: [116.357485, 39.922652, 116.356884, 39.900531],
+        },
+        {
+          name: "测试1-2",
+          path: [116.357485, 39.922652, 116.356884, 39.900531],
+        },
+        {
+          name: "道路4",
+          path: [116.375853, 39.923968, 116.374222, 39.900729],
+        },
+        {
+          name: "道路5",
+          path: [116.433187, 39.924232, 116.435076, 39.902243],
+        },
+        {
+          name: "道路5-2",
+          path: [116.433187, 39.924232, 116.435076, 39.902243],
+        },
+      ];
+
+      let lines = paths.map((p) => {
+        let coord = [];
+        for (let i = 0; i < p.path.length - 1; i += 2) {
+          coord.push([p.path[i], p.path[i + 1]]);
+        }
+        return {
+          name: p.name,
+          path: coord,
+        };
+      });
+
+      mapboxgl.accessToken =
+        "pk.eyJ1IjoiZGFuaWVsdGFvMTk5MyIsImEiOiJjaXNrMHpzZWYwMDNmMzNybmFsbzl4ejA4In0.h2jqPB0W6CMBbxPKRguNXA";
+      var map = (window.map = new mapboxgl.Map({
+        container: "map",
+        style: "mapbox://styles/mapbox/light-v10",
+        center: [116.418125, 39.908181],
+        zoom: 14,
+      }));
+      var language = new MapboxLanguage();
+      map.addControl(language);
+
+      var geojson = {
+        type: "FeatureCollection",
+        features: lines.map((l, i) => {
+          return {
+            type: "Feature",
+            properties: {
+              ...l,
+              index: i,
+            },
+            geometry: {
+              coordinates: l.path,
+              type: "LineString",
+            },
+          };
+        }),
+      };
+
+      map.on("load", function () {
+        // 'line-gradient' can only be used with GeoJSON sources
+        // and the source must have the 'lineMetrics' option set to true
+        map.addSource("line", {
+          type: "geojson",
+          lineMetrics: true,
+          data: geojson,
+        });
+
+        // the layer must be of type 'line'
+        map.addLayer({
+          type: "line",
+          source: "line",
+          id: "line",
+          paint: {
+            "line-color": "red",
+            "line-width": 14,
+          },
+          layout: {
+            "line-cap": "round",
+            "line-join": "round",
+          },
+        });
+      });
+      function showPoints(points, lnglats) {
+        console.log("..", points);
+        let tracks = [
+          {
+            name: "track",
+            path: lnglats,
+          },
+        ];
+        map.addSource("track", {
+          type: "geojson",
+          lineMetrics: true,
+          data: {
+            type: "FeatureCollection",
+            features: tracks.map((l, i) => {
+              return {
+                type: "Feature",
+                properties: {
+                  index: i,
+                  name: l.name,
+                },
+                geometry: {
+                  coordinates: l.path,
+                  type: "LineString",
+                },
+              };
+            }),
+          },
+        });
+
+        // the layer must be of type 'line'
+        map.addLayer({
+          type: "line",
+          source: "track",
+          id: "track",
+          paint: {
+            "line-color": "green",
+            "line-width": 2,
+          },
+          layout: {
+            "line-cap": "round",
+            "line-join": "round",
+          },
+        });
+      }
+      map.on("click", function (e) {
+        // set bbox as 5px reactangle area around clicked point
+        var bbox = [
+          [e.point.x - 5, e.point.y - 5],
+          [e.point.x + 5, e.point.y + 5],
+        ];
+        var features = map.queryRenderedFeatures(bbox, {
+          layers: ["line"],
+        });
+
+        // Run through the selected features and set a filter
+        // to match features with unique FIPS codes to activate
+        // the `counties-highlighted` layer.
+        console.log("feature", features);
+      });
+    </script>
+  </body>
+</html>
