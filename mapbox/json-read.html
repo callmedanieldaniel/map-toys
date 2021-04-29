@@ -92,8 +92,12 @@
           // 在文件读取完毕后，其内容将被保存在result属性中
           const content = evt.target.result;
           let name = file.name;
-          if(name.endsWith('.txt')){
+          if (name.endsWith(".txt")) {
             text2Json(content, file);
+            cb && cb(file);
+          }
+          if (name.endsWith(".json")) {
+            jsonParse(content, file);
             cb && cb(file);
           }
         };
@@ -180,52 +184,82 @@
             }
           }
         }
-        showPoints(file.name, points, lnglats);
+        showPoints({
+          filename: file.name,
+          points,
+          index: 0,
+          lnglats,
+        });
       }
+      function isValidCoord(arr) {
+        return (
+          arr &&
+          arr.length == 2 
+          // Math.abs(arr[0]) <= 180 &&
+          // Math.abs(arr[1]) <= 90
+        );
+      }
+      function jsonParse(txt, file) {
+        let paths = JSON.parse(txt);
+        let totalPoints = [];
+        let totalLnglats = [];
+        paths.map((path, i) => {
+          let points = [];
+          let lnglats = [];
+          path.forEach((pt) => {
+            if (isValidCoord(pt)) {
+              let lnglat = {
+                lng: pt[0],
+                lat: pt[1],
+              };
+              points.push({
+                filename: file.name,
+                index: points.length,
+                lng: pt[0],
+                lat: pt[1],
+              });
+              lnglats.push(lnglat);
 
-      let paths = [
-        {
-          name: "测试1",
-          path: [116.357485, 39.922652, 116.356884, 39.900531],
-        },
-        {
-          name: "测试1-2",
-          path: [116.357485, 39.922652, 116.356884, 39.900531],
-        },
-        {
-          name: "道路4",
-          path: [116.375853, 39.923968, 116.374222, 39.900729],
-        },
-        {
-          name: "道路5",
-          path: [116.433187, 39.924232, 116.435076, 39.902243],
-        },
-        {
-          name: "道路5-2",
-          path: [116.433187, 39.924232, 116.435076, 39.902243],
-        },
-      ];
-
-      let lines = paths.map((p) => {
-        let coord = [];
-        for (let i = 0; i < p.path.length - 1; i += 2) {
-          coord.push([p.path[i], p.path[i + 1]]);
-        }
-        return {
-          name: p.name,
-          path: coord,
-        };
-      });
+              totalPoints.push({
+                filename: file.name,
+                index: points.length,
+                lng: pt[0],
+                lat: pt[1],
+              });
+              totalLnglats.push(lnglat);
+            }else{
+              console.log('.')
+            }
+          });
+          // showLines([path], i);
+          // showPoints({
+          //   filename: file.name,
+          //   index: i,
+          //   points,
+          //   lnglats,
+          // });
+        });
+        showPoints({
+            filename: file.name,
+            index: 0,
+            points:totalPoints,
+            lnglats:totalLnglats,
+          });
+      }
 
       mapboxgl.accessToken =
         "pk.eyJ1IjoiZGFuaWVsdGFvMTk5MyIsImEiOiJjaXNrMHpzZWYwMDNmMzNybmFsbzl4ejA4In0.h2jqPB0W6CMBbxPKRguNXA";
-      var map = (window.map = new mapboxgl.Map({
+      let map = (window.map = new mapboxgl.Map({
         container: "map",
         // style: 'mapbox://styles/mapbox/streets-v11',
         style: "mapbox://styles/mapbox/light-v10",
-        center: [121.418125, 31.23],
-        zoom: 12,
+        center: [61.418125, 31.23],
+        zoom: 2,
       }));
+      map.on("zoomend", function (e) {
+        let zoom = map.getZoom();
+        console.log("zoom", zoom);
+      });
       // mapboxgl.setRTLTextPlugin('https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-rtl-text/v0.1.0/mapbox-gl-rtl-text.js');
 
       // map.addControl(
@@ -244,27 +278,40 @@
       );
       const layerIdList = [];
 
-      var geojson = {
-        type: "FeatureCollection",
-        features: lines.map((l, i) => {
+      function getLineDataSource(paths) {
+        let lines = paths.map((path, i) => {
+          let coord = [];
           return {
-            type: "Feature",
-            properties: {
-              ...l,
-              index: i,
-            },
-            geometry: {
-              coordinates: l.path,
-              type: "LineString",
-            },
+            name: i + "-",
+            path: path,
           };
-        }),
-      };
+        });
 
-      map.on("load", function () {
-        // 'line-gradient' can only be used with GeoJSON sources
-        // and the source must have the 'lineMetrics' option set to true
-        map.addSource("line", {
+        let geojson = {
+          type: "FeatureCollection",
+          features: lines.map((l, i) => {
+            return {
+              type: "Feature",
+              properties: {
+                ...l,
+                index: i,
+              },
+              geometry: {
+                coordinates: l.path,
+                type: "LineString",
+              },
+            };
+          }),
+        };
+        return geojson;
+      }
+
+      function showLines(paths, i) {
+        let geojson = getLineDataSource(paths);
+        let sourceName = "line" + i;
+        console.log("sourceName: ", sourceName);
+
+        map.addSource(sourceName, {
           type: "geojson",
           lineMetrics: true,
           data: geojson,
@@ -273,20 +320,30 @@
         // the layer must be of type 'line'
         map.addLayer({
           type: "line",
-          source: "line",
-          id: "line",
+          source: sourceName,
+          id: sourceName,
           paint: {
-            "line-color": "red",
-            "line-width": 14,
+            "line-width": 2,
+            "line-color": [
+              "rgb",
+              Math.random() * 255,
+              Math.random() * 255,
+              Math.random() * 255,
+            ],
           },
           layout: {
             "line-cap": "round",
             "line-join": "round",
           },
         });
+      }
+
+      map.on("load", function () {
+        // 'line-gradient' can only be used with GeoJSON sources
+        // and the source must have the 'lineMetrics' option set to true
       });
-      function showPoints(filename, points, lnglats) {
-        console.log("points", points);
+
+      function showPoints({ filename, points, lnglats, index = 1 }) {
         let geojson = {
           type: "FeatureCollection",
           // crs: {
@@ -307,8 +364,8 @@
           }),
         };
 
-        let sourceName = filename + "source";
-        let layerid = filename + "layer";
+        let sourceName = filename + index + "source";
+        let layerid = filename + index + "layer";
 
         map.addSource(sourceName, {
           type: "geojson",
@@ -340,7 +397,7 @@
           },
         });
         layerIdList.push(layerid);
-        enableMouseEvent();
+        // enableMouseEvent();
       }
 
       function enableMouseEvent() {
@@ -349,11 +406,11 @@
       function onClick(e) {
         // set bbox as 5px reactangle area around clicked point
         try {
-          var bbox = [
+          let bbox = [
             [e.point.x - 0, e.point.y - 0],
             [e.point.x + 0, e.point.y + 0],
           ];
-          var features = map.queryRenderedFeatures(e.point, {
+          let features = map.queryRenderedFeatures(e.point, {
             layers: layerIdList,
           });
           if (features && features.length) {
@@ -362,10 +419,10 @@
             let ps = f.properties;
             if (ps && ps.filename && ps.lng) {
               const html = `
-              <ul>
-                <li>文件来源名称：${ps.filename}</li>
-              </ul>
-            `;
+                <ul>
+                  <li>文件来源名称：${ps.filename}</li>
+                </ul>
+              `;
               $infos.innerHTML = html;
               $content.focus();
               $content.value = JSON.stringify(ps);
@@ -374,49 +431,6 @@
             }
           }
         } catch (error) {}
-      }
-      function showLines(points, lnglats) {
-        let tracks = [
-          {
-            name: "track",
-            path: lnglats,
-          },
-        ];
-        map.addSource("track", {
-          type: "geojson",
-          lineMetrics: true,
-          data: {
-            type: "FeatureCollection",
-            features: tracks.map((l, i) => {
-              return {
-                type: "Feature",
-                properties: {
-                  index: i,
-                  name: l.name,
-                },
-                geometry: {
-                  coordinates: l.path,
-                  type: "LineString",
-                },
-              };
-            }),
-          },
-        });
-
-        // the layer must be of type 'line'
-        map.addLayer({
-          type: "line",
-          source: "track",
-          id: "track",
-          paint: {
-            "line-color": "green",
-            "line-width": 2,
-          },
-          layout: {
-            "line-cap": "round",
-            "line-join": "round",
-          },
-        });
       }
 
       let markers = [];
