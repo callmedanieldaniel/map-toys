@@ -41,6 +41,15 @@
         top: 0px;
         z-index: 10000;
       }
+
+      .progress {
+        position: fixed;
+        top: 50px;
+        right: 100px;
+        background-color: #ccc;
+        color: #00f;
+        font-size: 24px;
+      }
     </style>
   </head>
   <body>
@@ -60,6 +69,11 @@
       </div>
       <div class="content">
         <textarea id="content" placeholder="文件内容..."></textarea>
+      </div>
+
+      <div class="progress">
+        进度：
+        <input />
       </div>
     </div>
 
@@ -193,8 +207,7 @@
       }
       function isValidCoord(arr) {
         return (
-          arr &&
-          arr.length == 2 
+          arr && arr.length == 2
           // Math.abs(arr[0]) <= 180 &&
           // Math.abs(arr[1]) <= 90
         );
@@ -227,8 +240,8 @@
                 lat: pt[1],
               });
               totalLnglats.push(lnglat);
-            }else{
-              console.log('.')
+            } else {
+              console.log(".");
             }
           });
           // showLines([path], i);
@@ -240,11 +253,11 @@
           // });
         });
         showPoints({
-            filename: file.name,
-            index: 0,
-            points:totalPoints,
-            lnglats:totalLnglats,
-          });
+          filename: file.name,
+          index: 0,
+          points: totalPoints,
+          lnglats: totalLnglats,
+        });
       }
 
       mapboxgl.accessToken =
