@@ -65,7 +65,7 @@
        * @param  {options.on} event.delete 整体被删除
        * @param  {options.on} event.delete 整体被删除
        */
-      class PolyDrawer {
+      class PolyEditer {
         constructor(options) {
           this.options = options;
           this.events = {};
@@ -80,12 +80,19 @@
               this.options.pathOptions
             );
           }
-
+          this._layer.setStyle(this.options.pathOptions);
+          window._layer = this._layer;
+          this._layer.on("click", this._polyClick, this);
           this._layerGroup.addLayer(this._layer);
-
           const coords = this._layer.getLatLngs()[0];
-          console.log("_layer: ", coords, this._layer);
           this._createVertexes(coords);
+        }
+        _polyClick(e) {
+          this._fireEvent({
+            type: "click",
+            event: e,
+          });
+          // this.disable();
         }
 
         _createVertexes(vertexes) {
@@ -96,7 +103,7 @@
             const marker = this._createMarker(latlng);
             marker.on("drag", (e) => {
               let lls = this._layer.getLatLngs()[0];
-              lls.splice(i,1,e.latlng);
+              lls.splice(i, 1, e.latlng);
               this._layer.setLatLngs(lls);
               this._fireEvent({
                 type: "drag",
@@ -121,9 +128,11 @@
 
         _fireEvent(obj) {
           const cbList = this.events[obj.type];
-          cbList && cbList.forEach((cb) => {
-            cb(obj);
-          });
+          cbList &&
+            cbList instanceof Array &&
+            cbList.forEach((cb) => {
+              cb(obj);
+            });
         }
         _syncHintLine() {
           const polyPoints = this._layer.getLatLngs();
@@ -157,7 +166,7 @@
             });
           }
           const marker = new L.Marker(latlng, {
-            draggable: true,
+            draggable: !!this.options.editable,
             icon: icon,
           });
           this._layerGroup.addLayer(marker);
@@ -172,17 +181,11 @@
         off() {}
         disable() {
           // reset cursor
-          this._map._container.style.cursor = "";
-
+          this.options.map._container.style.cursor = "";
           // unbind listeners
-          this._map.off("mousemove", this._syncHintMarker, this);
-
-          if (this.tempMapDoubleClickZoomState) {
-            this._map.doubleClickZoom.enable();
-          }
-
+          this._layer.off("click", this._polyClick);
           // remove layer
-          this._map.removeLayer(this._layerGroup);
+          this.options.map.removeLayer(this._layerGroup);
         }
       }
     </script>
@@ -194,19 +197,29 @@
         attribution:
           '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors',
       }).addTo(map);
-      let drawer = new PolyDrawer({
+      let drawer = new PolyEditer({
         map: map,
-        path: [
-          { lat: 51.52177522311313, lng: -0.15071868896484378 },
-          { lat: 51.520173035107824, lng: -0.09733200073242189 },
-          { lat: 51.5038274976179, lng: -0.12977600097656253 },
-          { lat: 51.50639189133812, lng: -0.1831626892089844 },
-        ],
+        editable: true,
+        // path: [
+        //   { lat: 51.52177522311313, lng: -0.15071868896484378 },
+        //   { lat: 51.520173035107824, lng: -0.09733200073242189 },
+        //   { lat: 51.5038274976179, lng: -0.12977600097656253 },
+        //   { lat: 51.50639189133812, lng: -0.1831626892089844 },
+        // ],
+        layer: L.polygon(
+          [
+            { lat: 51.52177522311313, lng: -0.15071868896484378 },
+            { lat: 51.520173035107824, lng: -0.09733200073242189 },
+            { lat: 51.5038274976179, lng: -0.12977600097656253 },
+            { lat: 51.50639189133812, lng: -0.1831626892089844 },
+          ]
+        ),
         isPolygon: true,
         pathOptions: {
-          color: "red",
-          fillColor: "orange",
-          fillOpacity: 0.7,
+          color: "#00f",
+          fill:false,
+          fillColor: "#f00",
+          fillOpacity: 0.3,
         },
         icon: (obj) => {
           // return L.icon({
@@ -232,6 +245,9 @@
 
       drawer.on("dragend", (o) => {
         console.log("dragend", o);
+      });
+      drawer.on("click", (o) => {
+        console.log("click", o);
       });
     </script>
   </body>

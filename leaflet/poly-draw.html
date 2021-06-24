@@ -19,7 +19,7 @@
       #map {
         height: 800px;
       }
-      /* 
+      /*
       .my-div-icon {
       } */
       .my-div-icon::after {
@@ -69,6 +69,7 @@
         constructor(options) {
           this.options = options;
           this._map = options.map;
+          this._vertexMarkers = [];
           this.events = {};
           this.initElements();
           this.initEvents();
@@ -77,24 +78,21 @@
         initElements() {
           // this.mouseMarker = this.createMarker(ll);
           // create a new layergroup
-          this._layerGroup = new L.LayerGroup();
-          this._layerGroup._pmTempLayer = true;
+
+          this._layerGroup = new window.L.LayerGroup();
           this._layerGroup.addTo(this._map);
 
           // this is the polyLine that'll make up the polygon
-          this._layer = L.polyline([], this.options.lineStyle);
+          this._layer = window.L.polyline([], this.options.lineStyle);
           // this._setPane(this._layer, "layerPane");
-          this._layer._pmTempLayer = true;
           this._layerGroup.addLayer(this._layer);
 
-          this._polygon = L.polygon([], this.options.fillStyle);
+          this._polygon = window.L.polygon([], this.options.fillStyle);
           // this._setPane(this._polygon, "layerPane");
-          this._polygon._pmTempLayer = true;
           this._layerGroup.addLayer(this._polygon);
 
           // this is the hintline from the mouse cursor to the last marker
-          this._hintline = L.polyline([], this.options.hintlineStyle);
-          this._hintline._pmTempLayer = true;
+          this._hintline = window.L.polyline([], this.options.hintlineStyle);
           this._layerGroup.addLayer(this._hintline);
 
           // this is the hintmarker on the mouse cursor
@@ -105,7 +103,7 @@
               type: "mouse",
             });
           }
-          this._hintMarker = L.marker(this._map.getCenter(), {
+          this._hintMarker = window.L.marker(this._map.getCenter(), {
             interactive: false, // always vertex marker below will be triggered from the click event -> _finishShape #911
             zIndexOffset: 100,
             icon: icon,
@@ -116,33 +114,34 @@
           this._layerGroup.addLayer(this._hintMarker);
         }
 
-        updatePolygon() {
-          // get coordinates
-          const coords = this._layer.getLatLngs();
+        // updatePolygon() {
+        //   // get coordinates
+        //   const coords = this._layer.getLatLngs()
+        //   // only finish the shape if there are 3 or more vertices
+        //   if (coords.length <= 2) {
+        //     return
+        //   }
 
-          // only finish the shape if there are 3 or more vertices
-          if (coords.length <= 2) {
-            return;
-          }
-
-          const polygonLayer = L.polygon(coords, this.options.pathOptions);
-          this._finishLayer(polygonLayer);
-          polygonLayer.addTo(this._map.pm._getContainingLayer());
-        }
+        //   const polygonLayer = window.L.polygon(coords, this.options.pathOptions)
+        //   this._finishLayer(polygonLayer)
+        //   polygonLayer.addTo(this._map.pm._getContainingLayer())
+        // }
 
         initEvents() {
+          const self = this;
+          let QKEY_CODE = 113;
+          let keyCode = this.options.backKeyCode || QKEY_CODE;
+          document.addEventListener("keypress", (e) => {
+            console.log("keypress: ", e.keyCode);
+            if (e.keyCode == keyCode) {
+              self._popVertex();
+            }
+          });
           this.options.map.on("click", this._createVertex, this);
           // sync hint marker with mouse cursor
           this.options.map.on("mousemove", this._syncHintMarker, this);
-
           // sync the hintline with hint marker
           this._hintMarker.on("move", this._syncHintLine, this);
-
-          // this._map.on("click", this._createVertex, this);
-          // // sync hint marker with mouse cursor
-          // this._map.on("mousemove", this._syncHintMarker, this);
-          // // sync the hintline with hint marker
-          // this._hintMarker.on("move", this._syncHintLine, this);
         }
 
         _createVertex(e) {
@@ -152,45 +151,69 @@
           if (latlng.equals(this._layer.getLatLngs()[0])) {
             // yes? finish the polygon
             this._finishShape(e);
-
-            // "why?", you ask? Because this happens when we snap the last vertex to the first one
-            // and then click without hitting the last marker. Click happens on the map
-            // in 99% of cases it's because the user wants to finish the polygon. So...
             return;
           }
-          // check if the first and this vertex have the same latlng
-          if (latlng.equals(this._layer.getLatLngs()[0])) {
-            // yes? finish the polygon
-            this._finishShape(e);
-
-            // "why?", you ask? Because this happens when we snap the last vertex to the first one
-            // and then click without hitting the last marker. Click happens on the map
-            // in 99% of cases it's because the user wants to finish the polygon. So...
-            return;
-          }
-
-          this._layer._latlngInfo = this._layer._latlngInfo || [];
-          this._layer._latlngInfo.push({
-            latlng,
-            snapInfo: this._hintMarker._snapInfo,
-          });
 
           this._layer.addLatLng(latlng);
-          const newMarker = this._createMarker(latlng);
+          const marker = this._createMarker(latlng);
+          this._vertexMarkers.push(marker);
+          console.log("_vertexMarkers: ", this._vertexMarkers.length);
+
           this._hintline.setLatLngs([latlng, latlng]);
 
           this._fireEvent({
             type: "add-node",
-            marker: newMarker,
+            marker: marker,
             latlng,
+            layer: this._layer,
             path: this._layer.getLatLngs(),
           });
         }
+
+        _popVertex() {
+          // get coordinate for new vertex by hintMarker (cursor marker)
+          let removeMarker = this._vertexMarkers.pop();
+
+          if (!removeMarker) return;
+          const removeLatlng = removeMarker.getLatLng();
+          this._layerGroup.removeLayer(removeMarker);
+
+          let lls = this._layer.getLatLngs();
+          let _lls = lls.slice(0, lls.length - 1);
+          this._layer.setLatLngs(_lls);
+
+          // this._polygon.setLatLngs(_lls)
+          let polyLls = this._polygon.getLatLngs();
+          polyLls.splice(lls.length - 2, 1);
+          this._polygon.setLatLngs(_lls);
+          // this._syncHintMarker()
+
+          let endMarker = this._vertexMarkers[this._vertexMarkers.length - 1];
+          if (endMarker) {
+            const ell = endMarker.getLatLng();
+          }else{
+            this._hintline.setLatLngs([]);
+          }
+
+          this._syncHintLine();
+
+          this._fireEvent({
+            type: "remove-node",
+            // marker: removeMarker,
+            latlng: removeLatlng,
+            layer: this._layer,
+            path: this._layer.getLatLngs(),
+          });
+        }
+
         _fireEvent(obj) {
           const cbList = this.events[obj.type];
-          cbList.forEach((cb) => {
-            cb(obj);
-          });
+
+          cbList &&
+            cbList instanceof Array &&
+            cbList.forEach((cb) => {
+              cb && cb instanceof Function && cb(obj);
+            });
         }
         _syncHintLine() {
           const polyPoints = this._layer.getLatLngs();
@@ -209,21 +232,26 @@
           this._hintMarker.setLatLng(e.latlng);
           const coords = this._layer.getLatLngs();
 
-          if (coords.length > 2) {
+          if (coords.length >= 2) {
             this._polygon.setLatLngs([...coords, e.latlng]);
           }
         }
+        removeNode() {}
+
         _createMarker(latlng) {
           // create the new marker
           let icon = this.options.icon;
           if (icon instanceof Function) {
+            const coords = this._layer.getLatLngs();
             icon = icon({
               type: "add",
               layer: this._layer,
               latlng: latlng,
+              path: coords,
+              index: coords.length - 1,
             });
           }
-          const marker = new L.Marker(latlng, {
+          const marker = new window.L.Marker(latlng, {
             draggable: false,
             icon: icon,
           });
@@ -245,10 +273,10 @@
 
           // create the leaflet shape and add it to the map
           if (this.options.isPolygon) {
-            polyLayer = L.polygon(coords, this.options.pathOptions);
+            polyLayer = window.L.polygon(coords, this.options.pathOptions);
             polyLayer.addTo(this._map);
           } else {
-            polyLayer = L.polyline(coords, this.options.pathOptions);
+            polyLayer = window.L.polyline(coords, this.options.pathOptions);
             polyLayer.addTo(this._map);
           }
 
@@ -270,7 +298,6 @@
         disable() {
           // reset cursor
           this._map._container.style.cursor = "";
-
           // unbind listeners
           this._map.off("click", this._createVertex, this);
           this._map.off("mousemove", this._syncHintMarker, this);
@@ -278,9 +305,9 @@
           if (this.tempMapDoubleClickZoomState) {
             this._map.doubleClickZoom.enable();
           }
-
           // remove layer
           this._map.removeLayer(this._layerGroup);
+          this._vertexMarkers = [];
         }
       }
     </script>
@@ -314,15 +341,6 @@
           fillOpacity: 0.7,
         },
         icon: (obj) => {
-          // return L.icon({
-          //   iconUrl: "leaf-green.png",
-          //   shadowUrl: "leaf-shadow.png",
-          //   iconSize: [38, 95], // size of the icon
-          //   shadowSize: [50, 64], // size of the shadow
-          //   iconAnchor: [22, 94], // point of the icon which will correspond to marker's location
-          //   shadowAnchor: [4, 62], // the same for the shadow
-          //   popupAnchor: [-3, -76], // point from which the popup should open relative to the iconAnchor
-          // });
           return L.divIcon({
             // iconSize: [30, 30],
             // iconAnchor: [15, 15],
