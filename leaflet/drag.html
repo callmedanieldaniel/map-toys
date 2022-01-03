@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Leaflet example in one file</title>
+
+    <!-- include leaflet css and javascript -->
+    <link
+      rel="stylesheet"
+      crossorigin=""
+      href="https://unpkg.com/leaflet@1.0.3/dist/leaflet.css"
+    />
+    <script
+      src="https://unpkg.com/leaflet@1.0.3/dist/leaflet-src.js"
+      crossorigin=""
+    ></script>
+
+    <style type="text/css">
+      #map {
+        height: 300px;
+      }
+    </style>
+  </head>
+
+  <body>
+    <h1><a href="http://leafletjs.com/">Leaflet</a> example in one file</h1>
+    <p>
+      This is the self-contained one-file-version for a
+      <a href="http://leafletjs.com/">leaflet</a> map. For a version with CSS
+      and Javascript in different files see <a href="index.html">index.html</a>.
+      For a leaflet map without Javascript programming try
+      <a href="https://lapizistik.github.io/leaflet-easymap/">Leasymap</a>.
+    </p>
+    <p>
+      Find the
+      <a href="https://github.com/Lapizistik/leaflet-examples"
+        >source code on Github</a
+      >.
+    </p>
+    <p>
+      The one important thing is that the #map div needs a <em>height</em>
+      to be visible.
+    </p>
+    <div id="map"></div>
+
+    <script>
+      let mapDiv = document.getElementById('map')
+      var draggable = new L.Draggable(mapDiv);
+   
+      draggable.on('dragend',(e)=>{
+        console.log('dragend',e)
+      })
+      draggable.on('click',(e)=>{
+        console.log('click',e)
+      })
+      draggable.enable();
+
+
+      var map = L.map("map", {
+        dragend: true,
+      }).setView([51.505, -0.09], 13);
+
+      L.tileLayer("http://{s}.tile.osm.org/{z}/{x}/{y}.png", {
+        attribution:
+          '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors',
+      }).addTo(map);
+
+      L.marker([51.5, -0.09])
+        .addTo(map)
+        .bindPopup("A pretty CSS3 popup.<br> Easily customizable.")
+        .openPopup();
+
+      const mypop = L.popup();
+
+      const drawText = (e) => {
+        console.log('click',e)
+        mypop
+          .setLatLng(e.latlng)
+          .setContent("你临幸了这个点：<br>" + e.latlng.toString())
+          .openOn(map);
+      };
+      map.on("click", drawText);
+    </script>
+  </body>
+</html>

@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Create a gradient line using an expression</title>
+    <meta
+      name="viewport"
+      content="initial-scale=1,maximum-scale=1,user-scalable=no"
+    />
+    <script src="https://unpkg.com/deck.gl@^8.0.0/dist.min.js"></script>
+    <script src="https://api.mapbox.com/mapbox-gl-js/v2.1.1/mapbox-gl.js"></script>
+    <script src="https://mapbox.github.io/mapbox-gl-language/index.js"></script>
+    <link
+      href="https://api.mapbox.com/mapbox-gl-js/v2.1.1/mapbox-gl.css"
+      rel="stylesheet"
+    />
+    <!-- <script src='https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-language/v0.10.0/mapbox-gl-language.js'></script> -->
+
+    <link
+      rel="stylesheet"
+      href="https://smohan.oss-cn-beijing.aliyuncs.com/static/demos/styles/file-rw-in-browser.css"
+    />
+
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+      }
+      #map {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        width: 100%;
+      }
+      .file-reader {
+        position: fixed;
+        background-color: white;
+        width: 400px;
+        height: 400px;
+        left: 0px;
+        top: 0px;
+        z-index: 10000;
+      }
+
+      .progress {
+        position: fixed;
+        top: 50px;
+        right: 100px;
+        background-color: #ccc;
+        color: #00f;
+        font-size: 24px;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="map"></div>
+    <div class="file-reader">
+      <div class="form">
+        <label class="uploader">
+          <input type="file" id="file" multiple="true" />
+          <span class="btn" id="chosefile" role="button">选择文件</span>
+        </label>
+        <div class="actions">
+          <button class="btn" id="readFile" disabled>读取文件</button>
+        </div>
+      </div>
+      <div class="infos" id="infos">
+        <p style="color: #999">请选择文本类型文件</p>
+      </div>
+      <div class="content">
+        <textarea id="content" placeholder="文件内容..."></textarea>
+      </div>
+
+      <div class="progress">
+        进度：
+        <input />
+      </div>
+    </div>
+
+    <script>
+      const $ = (id) => document.getElementById(id);
+      const $file = $("file");
+      const $content = $("content");
+      const $readBtn = $("readFile");
+      const $infos = $("infos");
+
+      setTimeout(() => {
+        document.getElementById("chosefile").click();
+      }, 100);
+      window.addEventListener("load", () => {
+        document.getElementById("chosefile").click();
+      });
+
+      const fileReader = new FileReader();
+
+      // 保存当前文件域引用
+      let currentFile = null;
+
+      const readFile = async (file, cb) => {
+        if (!file) {
+          alert("请选择文件");
+          return;
+        }
+        let p = new Promise((res, rej) => {});
+        fileReader.onloadend = function (evt) {
+          // 在文件读取完毕后，其内容将被保存在result属性中
+          const content = evt.target.result;
+          let name = file.name;
+          if (name.endsWith(".txt")) {
+            text2Json(content, file);
+            cb && cb(file);
+          }
+          if (name.endsWith(".json")) {
+            jsonParse(content, file);
+            cb && cb(file);
+          }
+        };
+        // 以utf-8编码文本格式来读取
+        fileReader.readAsText(file, "utf-8");
+      };
+
+      let cnt = 0;
+
+      $file.onchange = async (evt) => {
+        let files = evt.target.files;
+
+        await Array.from(files).reduce(async (promise, file) => {
+          // This line will wait for the last async function to finish.
+          // The first iteration uses an already resolved Promise
+          // so, it will immediately continue.
+          await promise;
+
+          const contents = await new Promise((res, rej) => {
+            readFile(file, () => {
+              res();
+            });
+          });
+        }, Promise.resolve());
+      };
+
+      // $readBtn.addEventListener("click", () => readFile());
+
+      function text2Json(txt, file) {
+        let points = [];
+        let lnglats = [];
+        let lines = txt.split("\r\n");
+        for (let i = 0; i < lines.length; i++) {
+          let l = lines[i];
+          if (l.startsWith("#INSPVA")) {
+            cnt++;
+            if (cnt % 10 !== 0) {
+              continue;
+            }
+            let s = l.split(";")[1];
+            if (s && s.length) {
+              let [
+                week,
+                secconds,
+                lat,
+                lng,
+                height,
+                NorthVelocity,
+                EastVelocity,
+                UpVelocity,
+                roll,
+                pitch,
+                azimuth,
+                status,
+                xxxx,
+                crlf,
+              ] = s.split(",");
+
+              lat = parseFloat(lat);
+              lng = parseFloat(lng);
+              if (!(Math.abs(lat) < 90 && Math.abs(lng) < 180)) {
+                continue;
+              }
+
+              points.push({
+                filename: file.name,
+                week,
+                secconds,
+                lat: lat,
+                lng: lng,
+                height,
+                NorthVelocity,
+                EastVelocity,
+                UpVelocity,
+                roll,
+                pitch,
+                azimuth,
+                status,
+                xxxx,
+                crlf,
+                index: points.length,
+              });
+              lnglats.push([lng, lat]);
+            }
+          }
+        }
+        showPoints({
+          filename: file.name,
+          points,
+          index: 0,
+          lnglats,
+        });
+      }
+      function isValidCoord(arr) {
+        return (
+          arr && arr.length == 2
+          // Math.abs(arr[0]) <= 180 &&
+          // Math.abs(arr[1]) <= 90
+        );
+      }
+      function jsonParse(txt, file) {
+        let paths = JSON.parse(txt);
+        let totalPoints = [];
+        let totalLnglats = [];
+        paths.map((path, i) => {
+          let points = [];
+          let lnglats = [];
+          path.forEach((pt) => {
+            if (isValidCoord(pt)) {
+              let lnglat = {
+                lng: pt[0],
+                lat: pt[1],
+              };
+              points.push({
+                filename: file.name,
+                index: points.length,
+                lng: pt[0],
+                lat: pt[1],
+              });
+              lnglats.push(lnglat);
+
+              totalPoints.push({
+                filename: file.name,
+                index: points.length,
+                lng: pt[0],
+                lat: pt[1],
+              });
+              totalLnglats.push(lnglat);
+            } else {
+              console.log(".");
+            }
+          });
+          // showLines([path], i);
+          // showPoints({
+          //   filename: file.name,
+          //   index: i,
+          //   points,
+          //   lnglats,
+          // });
+        });
+        showPoints({
+          filename: file.name,
+          index: 0,
+          points: totalPoints,
+          lnglats: totalLnglats,
+        });
+      }
+
+      mapboxgl.accessToken =
+        "pk.eyJ1IjoiZGFuaWVsdGFvMTk5MyIsImEiOiJjaXNrMHpzZWYwMDNmMzNybmFsbzl4ejA4In0.h2jqPB0W6CMBbxPKRguNXA";
+      let map = (window.map = new mapboxgl.Map({
+        container: "map",
+        // style: 'mapbox://styles/mapbox/streets-v11',
+        style: "mapbox://styles/mapbox/light-v10",
+        center: [61.418125, 31.23],
+        zoom: 2,
+      }));
+      map.on("zoomend", function (e) {
+        let zoom = map.getZoom();
+        console.log("zoom", zoom);
+      });
+      // mapboxgl.setRTLTextPlugin('https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-rtl-text/v0.1.0/mapbox-gl-rtl-text.js');
+
+      // map.addControl(
+      //   new MapboxLanguage({
+      //     defaultLanguage: "zh",
+      //   })
+      // );
+      // map.setLayoutProperty('country-label', 'text-field', ['get', 'name_' + 'zh']);
+      mapboxgl.setRTLTextPlugin(
+        "https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-rtl-text/v0.2.3/mapbox-gl-rtl-text.js"
+      );
+      map.addControl(
+        new MapboxLanguage({
+          defaultLanguage: "zh-Hans",
+        })
+      );
+      const layerIdList = [];
+
+      function getLineDataSource(paths) {
+        let lines = paths.map((path, i) => {
+          let coord = [];
+          return {
+            name: i + "-",
+            path: path,
+          };
+        });
+
+        let geojson = {
+          type: "FeatureCollection",
+          features: lines.map((l, i) => {
+            return {
+              type: "Feature",
+              properties: {
+                ...l,
+                index: i,
+              },
+              geometry: {
+                coordinates: l.path,
+                type: "LineString",
+              },
+            };
+          }),
+        };
+        return geojson;
+      }
+
+      function showLines(paths, i) {
+        let geojson = getLineDataSource(paths);
+        let sourceName = "line" + i;
+        console.log("sourceName: ", sourceName);
+
+        map.addSource(sourceName, {
+          type: "geojson",
+          lineMetrics: true,
+          data: geojson,
+        });
+
+        // the layer must be of type 'line'
+        map.addLayer({
+          type: "line",
+          source: sourceName,
+          id: sourceName,
+          paint: {
+            "line-width": 2,
+            "line-color": [
+              "rgb",
+              Math.random() * 255,
+              Math.random() * 255,
+              Math.random() * 255,
+            ],
+          },
+          layout: {
+            "line-cap": "round",
+            "line-join": "round",
+          },
+        });
+      }
+
+      map.on("load", function () {
+        // 'line-gradient' can only be used with GeoJSON sources
+        // and the source must have the 'lineMetrics' option set to true
+      });
+
+      function showPoints({ filename, points, lnglats, index = 1 }) {
+        let geojson = {
+          type: "FeatureCollection",
+          // crs: {
+          //   type: "name",
+          //   properties: { name: "urn:ogc:def:crs:OGC:1.3:CRS84" },
+          // },
+          features: points.map((p) => {
+            return {
+              type: "Feature",
+              properties: {
+                ...p,
+              },
+              geometry: {
+                type: "Point",
+                coordinates: [p.lng, p.lat],
+              },
+            };
+          }),
+        };
+
+        let sourceName = filename + index + "source";
+        let layerid = filename + index + "layer";
+
+        map.addSource(sourceName, {
+          type: "geojson",
+          // Point to GeoJSON data. This example visualizes all M1.0+ circle-points
+          // from 12/22/15 to 1/21/16 as logged by USGS' Earthquake hazards program.
+          data: geojson,
+          cluster: false,
+          clusterMaxZoom: 8, // Max zoom to cluster points on
+          clusterRadius: 1, // Radius of each cluster when clustering points (defaults to 50)
+        });
+
+        map.addLayer({
+          id: layerid,
+          type: "circle",
+          interactive: true,
+          source: sourceName,
+          paint: {
+            // Use step expressions (https://docs.mapbox.com/mapbox-gl-js/style-spec/#expressions-step)
+            "circle-radius": 3,
+            "circle-color": [
+              "rgb",
+              Math.random() * 255,
+              Math.random() * 255,
+              Math.random() * 255,
+            ],
+            "circle-stroke-color": "white",
+            "circle-stroke-width": 0,
+            "circle-opacity": 0.5,
+          },
+        });
+        layerIdList.push(layerid);
+        // enableMouseEvent();
+      }
+
+      function enableMouseEvent() {
+        map.on("click", onClick);
+      }
+      function onClick(e) {
+        // set bbox as 5px reactangle area around clicked point
+        try {
+          let bbox = [
+            [e.point.x - 0, e.point.y - 0],
+            [e.point.x + 0, e.point.y + 0],
+          ];
+          let features = map.queryRenderedFeatures(e.point, {
+            layers: layerIdList,
+          });
+          if (features && features.length) {
+            let f = features[0];
+            console.log("feature", f.properties.index, f.properties, features);
+            let ps = f.properties;
+            if (ps && ps.filename && ps.lng) {
+              const html = `
+                <ul>
+                  <li>文件来源名称：${ps.filename}</li>
+                </ul>
+              `;
+              $infos.innerHTML = html;
+              $content.focus();
+              $content.value = JSON.stringify(ps);
+              // showMarker(features.map(f=>f.properties));
+              showMarker([ps]);
+            }
+          }
+        } catch (error) {}
+      }
+
+      let markers = [];
+
+      function showMarker(list) {
+        markers &&
+          markers.forEach((m) => {
+            m && m.remove();
+          });
+        markers = list.map((ll) => {
+          let lnglat = [ll.lng, ll.lat];
+          return new mapboxgl.Marker().setLngLat(lnglat).addTo(map);
+        });
+      }
+    </script>
+  </body>
+</html>
