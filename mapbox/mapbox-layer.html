@@ -106,9 +106,9 @@ body { margin: 0; padding: 0; }
       [e.point.x + 5, e.point.y + 5]
       ];
       var features = map.queryRenderedFeatures(bbox, {
-      layers: ['counties']
+        layers: ['counties']
       });
-       
+      
       // Run through the selected features and set a filter
       // to match features with unique FIPS codes to activate
       // the `counties-highlighted` layer.
